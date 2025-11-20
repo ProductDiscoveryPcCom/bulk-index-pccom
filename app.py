@@ -320,9 +320,13 @@ def main():
         
         if json_key:
             try:
+                # Reset file pointer to beginning
+                json_key.seek(0)
                 json_key_content = json.load(json_key)
                 if 'client_email' in json_key_content:
                     st.success(f"✓ Archivo válido: {json_key_content['client_email']}")
+                    # Guardar en session_state para reutilizar
+                    st.session_state.json_key_content = json_key_content
                 else:
                     st.error("❌ El archivo JSON no parece ser una cuenta de servicio válida")
                     json_key = None
@@ -409,9 +413,15 @@ def main():
             if st.button("🚀 ENVIAR A GOOGLE", type="primary", use_container_width=True):
                 validated_urls = st.session_state.validated_urls
                 
+                # Verificar que las credenciales están disponibles
+                if 'json_key_content' not in st.session_state:
+                    st.error("❌ Error: Las credenciales JSON no están disponibles. Por favor, vuelve a subir el archivo JSON.")
+                    st.session_state.ready_to_submit = False
+                    st.stop()
+                
                 try:
-                    # Crear servicio
-                    json_key_content = json.load(json_key)
+                    # Crear servicio usando JSON guardado en session_state
+                    json_key_content = st.session_state.json_key_content
                     indexing_service = GoogleIndexingService(json_key_content)
                     
                     # Progress bar
